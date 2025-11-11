@@ -2,6 +2,10 @@
   "name": "mdimgup",
   "displayName": "Markdown Image Upload",
   "description": "My awesome extension for Markdown Image Upload",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leonwong282/mdimgup"
+  },
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.105.0"
