@@ -6,6 +6,9 @@ import sharp from "sharp";
 import mime from "mime-types";
 import pLimit from "p-limit";
 import CryptoJS from "crypto-js";
+import { ProfileManager, StorageProfile } from "./profile-manager";
+import { registerProfileCommands } from "./profile-ui";
+import { ProfileStatusBar } from "./status-bar";
 
 const cache = new Map<string, string>();
 
@@ -138,23 +141,83 @@ function getProviderDisplayName(provider: StorageProvider): string {
 }
 
 export async function activate(context: vscode.ExtensionContext) {
+  // Initialize ProfileManager
+  const profileManager = new ProfileManager(context);
+  await profileManager.initialize();
+
+  // Register profile commands
+  registerProfileCommands(context, profileManager);
+
+  // Create status bar
+  const statusBar = new ProfileStatusBar(profileManager);
+  context.subscriptions.push(statusBar);
+  await statusBar.update();
+
+  // Listen for configuration changes
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(async (e) => {
+      if (e.affectsConfiguration("mdimgup")) {
+        await statusBar.update();
+      }
+    })
+  );
+
   const cmd = vscode.commands.registerCommand("mdimgup.uploadImages", async () => {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
+    if (!editor) {
+      return;
+    }
 
-    const cfg = vscode.workspace.getConfiguration("mdimgup");
-    const storageConfig = resolveStorageConfig(cfg);
+    // Resolve profile (includes backward compatibility with legacy config)
+    let profile = await profileManager.resolveProfile(editor);
 
-    if (!storageConfig) {
+    if (!profile) {
+      // No profile found, prompt user to create or select one
+      const action = await vscode.window.showInformationMessage(
+        "No storage profile configured. Would you like to create or select one?",
+        "Create Profile",
+        "Select Profile",
+        "Cancel"
+      );
+
+      if (action === "Create Profile") {
+        await vscode.commands.executeCommand("mdimgup.createProfile");
+        profile = await profileManager.resolveProfile(editor);
+      } else if (action === "Select Profile") {
+        await vscode.commands.executeCommand("mdimgup.selectProfile");
+        profile = await profileManager.resolveProfile(editor);
+      }
+
+      if (!profile) {
+        return;
+      }
+    }
+
+    // Get credentials
+    const profileWithCreds = await profileManager.getProfileWithCredentials(profile.id);
+    if (!profileWithCreds) {
       vscode.window.showErrorMessage(
-        "Storage configuration missing. Please configure your storage provider settings in VS Code settings."
+        `No credentials found for profile "${profile.name}". Please configure credentials.`
       );
       return;
     }
 
-    const MAX_WIDTH = cfg.get<number>("maxWidth")!;
-    const PARALLEL = cfg.get<number>("parallelUploads")!;
-    const USE_CACHE = cfg.get<boolean>("useCache")!;
+    const cfg = vscode.workspace.getConfiguration("mdimgup");
+    const MAX_WIDTH = profile.maxWidth || cfg.get<number>("maxWidth")!;
+    const PARALLEL = profile.parallelUploads || cfg.get<number>("parallelUploads")!;
+    const USE_CACHE = profile.useCache !== undefined ? profile.useCache : cfg.get<boolean>("useCache")!;
+
+    const storageConfig: StorageConfig = {
+      provider: profile.provider,
+      endpoint: profile.endpoint || null,
+      region: profile.region,
+      bucket: profile.bucket,
+      accessKey: profileWithCreds.accessKey,
+      secretKey: profileWithCreds.secretKey,
+      accountId: profile.accountId || null,
+      cdnDomain: profile.cdnDomain,
+      pathPrefix: profile.pathPrefix,
+    };
 
     const s3 = createS3Client(storageConfig);
     const providerName = getProviderDisplayName(storageConfig.provider);
@@ -170,9 +233,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const tasks = matches.map(m => limit(async () => {
       let imgPath = decodeURIComponent(m[1]);
-      if (imgPath.startsWith("http")) return;
+      if (imgPath.startsWith("http")) {
+        return;
+      }
       const fullPath = path.isAbsolute(imgPath) ? imgPath : path.join(mdDir, imgPath);
-      if (!fs.existsSync(fullPath)) return;
+      if (!fs.existsSync(fullPath)) {
+        return;
+      }
 
       const buffer = fs.readFileSync(fullPath);
       const hash = CryptoJS.MD5(buffer.toString("base64")).toString();
@@ -207,17 +274,28 @@ export async function activate(context: vscode.ExtensionContext) {
 
     await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
-      title: `Uploading images to ${providerName}...`,
+      title: `Uploading images to ${profile.name} (${providerName})...`,
     }, () => Promise.all(tasks));
 
     const edit = new vscode.WorkspaceEdit();
     edit.replace(editor.document.uri, new vscode.Range(0, 0, editor.document.lineCount, 0), content);
     await vscode.workspace.applyEdit(edit);
 
-    vscode.window.showInformationMessage(`✅ Uploaded ${matches.length} image(s) to ${providerName}`);
+    vscode.window.showInformationMessage(`✅ Uploaded ${matches.length} image(s) to ${profile.name}`);
+
+    // Update status bar
+    await statusBar.update();
   });
 
-  context.subscriptions.push(cmd);
+  // Upload with Profile Selection command
+  const uploadWithProfileCmd = vscode.commands.registerCommand("mdimgup.uploadImagesWithProfile", async () => {
+    // First, prompt for profile selection
+    await vscode.commands.executeCommand("mdimgup.selectProfile");
+    // Then execute normal upload
+    await vscode.commands.executeCommand("mdimgup.uploadImages");
+  });
+
+  context.subscriptions.push(cmd, uploadWithProfileCmd);
 }
 
 export function deactivate() { }

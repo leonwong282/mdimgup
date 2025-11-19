@@ -4,6 +4,53 @@ All notable changes to the "mdimgup" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.2.0] - 2025-11-19
+
+### Added
+- 🎉 **Multi-Profile Support**: Save and manage multiple storage configurations
+  - Create unlimited named storage profiles with friendly names
+  - Quick switch between profiles via status bar or keyboard shortcut (`Ctrl+Alt+P` / `Cmd+Alt+P`)
+  - Workspace-specific profile defaults (auto-select profile based on workspace)
+  - Profile-specific upload settings (maxWidth, parallelUploads, useCache)
+- 🔐 **Secure Credential Management**: Credentials stored in VS Code Secret Storage (keychain)
+- 📊 **Status Bar Integration**: Shows active profile with click-to-switch functionality
+- 🎨 **Profile Management UI**:
+  - Interactive profile creation wizard with step-by-step guidance
+  - Profile selection with Quick Pick (sorted by most recently used)
+  - Edit, delete, duplicate profile commands
+  - List all profiles with detailed information
+- 📤 **Import/Export Profiles**: Share profile templates with team (credentials excluded for security)
+- 🔄 **Automatic Migration**: Seamlessly migrate from legacy single-config to profiles
+- 📍 **Profile Metadata**: Track profile creation, updates, and last used timestamps
+- 🆕 **New Commands**:
+  - `Upload Images with Profile Selection` - One-off upload to specific profile
+  - `Create Storage Profile` - Launch profile creation wizard
+  - `Select Active Profile` - Choose active profile
+  - `Quick Switch Profile` - Fast profile switching (Ctrl+Alt+P)
+  - `Edit Storage Profile` - Modify existing profiles
+  - `Delete Storage Profile` - Remove profiles
+  - `Duplicate Storage Profile` - Copy profiles (without credentials)
+  - `List All Profiles` - View all configured profiles
+  - `Import Profile` - Import profile from JSON file
+  - `Export Profile` - Export profile to JSON file
+- ⚙️ **New Settings**:
+  - `mdimgup.activeProfile` - ID of currently active profile
+  - `mdimgup.showProfileInStatusBar` - Toggle status bar visibility
+  - `mdimgup.promptMigration` - Control migration prompts
+
+### Changed
+- 📝 Upload notifications now include profile name for clarity
+- 🔄 Profile resolution hierarchy: workspace profile → global profile → legacy config
+- 🎯 Upload command automatically prompts for profile creation if none exists
+
+### Technical
+- New `ProfileManager` class for CRUD operations and credential management
+- New `ProfileStatusBar` class for status bar integration
+- New `registerProfileCommands()` for UI command registration
+- Profile data stored in `globalState` (syncs via Settings Sync)
+- Credentials stored in Secret Storage API (local-only, secure)
+- Full backward compatibility with legacy single-config settings
+
 ## [0.1.0] - 2025-11-17
 
 ### Added

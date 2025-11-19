@@ -32,7 +32,7 @@
     "url": "https://github.com/leonwong282/mdimgup/issues"
   },
   "homepage": "https://github.com/leonwong282/mdimgup#readme",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "engines": {
     "vscode": "^1.105.0"
   },
@@ -43,6 +43,46 @@
       {
         "command": "mdimgup.uploadImages",
         "title": "Upload Markdown Images to Cloud Storage"
+      },
+      {
+        "command": "mdimgup.uploadImagesWithProfile",
+        "title": "Upload Images with Profile Selection"
+      },
+      {
+        "command": "mdimgup.createProfile",
+        "title": "Create Storage Profile"
+      },
+      {
+        "command": "mdimgup.selectProfile",
+        "title": "Select Active Profile"
+      },
+      {
+        "command": "mdimgup.quickSwitch",
+        "title": "Quick Switch Profile"
+      },
+      {
+        "command": "mdimgup.editProfile",
+        "title": "Edit Storage Profile"
+      },
+      {
+        "command": "mdimgup.deleteProfile",
+        "title": "Delete Storage Profile"
+      },
+      {
+        "command": "mdimgup.duplicateProfile",
+        "title": "Duplicate Storage Profile"
+      },
+      {
+        "command": "mdimgup.listProfiles",
+        "title": "List All Profiles"
+      },
+      {
+        "command": "mdimgup.importProfile",
+        "title": "Import Profile"
+      },
+      {
+        "command": "mdimgup.exportProfile",
+        "title": "Export Profile"
       }
     ],
     "menus": {
@@ -54,9 +94,32 @@
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "mdimgup.quickSwitch",
+        "key": "ctrl+alt+p",
+        "mac": "cmd+alt+p",
+        "when": "editorTextFocus"
+      }
+    ],
     "configuration": {
       "title": "Markdown Image Uploader",
       "properties": {
+        "mdimgup.activeProfile": {
+          "type": "string",
+          "default": "",
+          "description": "ID of the currently active storage profile"
+        },
+        "mdimgup.showProfileInStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show active profile name in status bar"
+        },
+        "mdimgup.promptMigration": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prompt to migrate legacy configuration to profiles"
+        },
         "mdimgup.storageProvider": {
           "type": "string",
           "enum": [
@@ -165,6 +228,7 @@
     "@types/mime-types": "^3.0.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
+    "@types/uuid": "^10.0.0",
     "@types/vscode": "^1.105.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
@@ -177,6 +241,7 @@
     "crypto-js": "^4.2.0",
     "mime-types": "^3.0.1",
     "p-limit": "^6.1.0",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "uuid": "^11.0.3"
   }
 }
