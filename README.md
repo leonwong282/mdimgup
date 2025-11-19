@@ -1,6 +1,3 @@
-
-````markdown
-
 # mdimgup: Markdown Image Upload for VS Code
 
 `mdimgup` is a VS Code extension that uploads local images referenced in Markdown files to S3-compatible cloud storage (Cloudflare R2, AWS S3, MinIO, DigitalOcean Spaces, Backblaze B2, etc.), then updates the image links in-place.

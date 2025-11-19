@@ -2,17 +2,40 @@
   "name": "mdimgup",
   "displayName": "Markdown Image Upload",
   "description": "Upload images in Markdown files to S3-compatible cloud storage (Cloudflare R2, AWS S3, MinIO, DigitalOcean Spaces, etc.)",
+  "publisher": "YOUR-PUBLISHER-NAME",
   "repository": {
     "type": "git",
     "url": "https://github.com/leonwong282/mdimgup"
   },
+  "license": "MIT",
+  "keywords": [
+    "markdown",
+    "image",
+    "upload",
+    "cloudflare",
+    "r2",
+    "s3",
+    "aws",
+    "minio",
+    "storage",
+    "cloud",
+    "cdn",
+    "digitalocean",
+    "spaces",
+    "backblaze"
+  ],
+  "categories": [
+    "Other",
+    "Formatters"
+  ],
+  "bugs": {
+    "url": "https://github.com/leonwong282/mdimgup/issues"
+  },
+  "homepage": "https://github.com/leonwong282/mdimgup#readme",
   "version": "0.1.0",
   "engines": {
     "vscode": "^1.105.0"
   },
-  "categories": [
-    "Other"
-  ],
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
@@ -150,7 +173,10 @@
     "typescript-eslint": "^8.46.3"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.705.0",
     "crypto-js": "^4.2.0",
-    "mime-types": "^3.0.1"
+    "mime-types": "^3.0.1",
+    "p-limit": "^6.1.0",
+    "sharp": "^0.33.5"
   }
 }
