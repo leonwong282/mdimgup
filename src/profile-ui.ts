@@ -382,26 +382,198 @@ async function editProfileCommand(profileManager: ProfileManager): Promise<void>
     return;
   }
 
-  const profile = selected.profile;
+  const profile = selected.profile as StorageProfile;
 
-  // For now, allow editing name and description
-  const newName = await vscode.window.showInputBox({
-    prompt: "Enter new profile name (or press Enter to keep current)",
-    value: profile.name,
-    validateInput: (value) => {
-      if (!value || value.trim().length === 0) {
-        return "Profile name is required";
-      }
-      if (value !== profile.name && profileManager.hasProfile(value)) {
-        return "A profile with this name already exists";
-      }
-      return null;
-    },
-  });
+  const actions: vscode.QuickPickItem[] = [
+    { label: "Rename profile" },
+    { label: "Edit description" },
+    { label: "Edit provider settings" },
+    { label: "Edit CDN & Path Prefix" },
+    { label: "Update credentials" },
+    { label: "Set as Active Profile" },
+    { label: "Cancel" },
+  ];
 
-  if (newName && newName !== profile.name) {
-    await profileManager.updateProfile(profile.id, { name: newName });
-    vscode.window.showInformationMessage(`Profile renamed to "${newName}"`);
+  const action = await vscode.window.showQuickPick(actions, { placeHolder: `Modify "${profile.name}"` });
+  if (!action || action.label === "Cancel") {
+    return;
+  }
+
+  try {
+    if (action.label === "Rename profile") {
+      const newName = await vscode.window.showInputBox({
+        prompt: "Enter new profile name",
+        value: profile.name,
+        validateInput: (value) => {
+          if (!value || value.trim().length === 0) {
+            return "Profile name is required";
+          }
+          if (value !== profile.name && profileManager.hasProfile(value)) {
+            return "A profile with this name already exists";
+          }
+          return null;
+        },
+      });
+      if (newName && newName !== profile.name) {
+        await profileManager.updateProfile(profile.id, { name: newName });
+        vscode.window.showInformationMessage(`Profile renamed to "${newName}"`);
+      }
+      return;
+    }
+
+    if (action.label === "Edit description") {
+      const newDesc = await vscode.window.showInputBox({
+        prompt: "Enter new description (optional)",
+        value: profile.description || "",
+      });
+      await profileManager.updateProfile(profile.id, { description: newDesc || undefined });
+      vscode.window.showInformationMessage("Description updated");
+      return;
+    }
+
+    if (action.label === "Edit provider settings") {
+      // Provider specific edits
+      if (profile.provider === "cloudflare-r2") {
+        const accountId = await vscode.window.showInputBox({
+          prompt: "Cloudflare R2 Account ID",
+          value: profile.accountId || "",
+          validateInput: (v) => (v ? null : "Account ID required"),
+        });
+        if (!accountId) {
+          return;
+        }
+
+        const bucket = await vscode.window.showInputBox({
+          prompt: "Bucket name",
+          value: profile.bucket || "",
+          validateInput: (v) => (v ? null : "Bucket required"),
+        });
+        if (!bucket) {
+          return;
+        }
+
+        await profileManager.updateProfile(profile.id, { accountId, bucket });
+        vscode.window.showInformationMessage("Provider settings updated");
+      } else if (profile.provider === "aws-s3") {
+        const region = await vscode.window.showInputBox({
+          prompt: "AWS region",
+          value: profile.region || "",
+          validateInput: (v) => (v ? null : "Region required"),
+        });
+        if (!region) {
+          return;
+        }
+
+        const bucket = await vscode.window.showInputBox({
+          prompt: "Bucket name",
+          value: profile.bucket || "",
+          validateInput: (v) => (v ? null : "Bucket required"),
+        });
+        if (!bucket) {
+          return;
+        }
+
+        await profileManager.updateProfile(profile.id, { region, bucket });
+        vscode.window.showInformationMessage("Provider settings updated");
+      } else {
+        // s3-compatible
+        const endpoint = await vscode.window.showInputBox({
+          prompt: "S3 endpoint URL",
+          value: profile.endpoint || "",
+          validateInput: (v) => {
+            if (!v) {
+              return "Endpoint required";
+            }
+            if (!v.startsWith("http://") && !v.startsWith("https://")) {
+              return "Endpoint must start with http:// or https://";
+            }
+            return null;
+          },
+        });
+        if (!endpoint) {
+          return;
+        }
+
+        const bucket = await vscode.window.showInputBox({
+          prompt: "Bucket name",
+          value: profile.bucket || "",
+          validateInput: (v) => (v ? null : "Bucket required"),
+        });
+        if (!bucket) {
+          return;
+        }
+
+        const region = await vscode.window.showInputBox({
+          prompt: "Region (optional)",
+          value: profile.region || "",
+        });
+
+        await profileManager.updateProfile(profile.id, { endpoint, bucket, region: region || profile.region });
+        vscode.window.showInformationMessage("Provider settings updated");
+      }
+
+      return;
+    }
+
+    if (action.label === "Edit CDN & Path Prefix") {
+      const cdn = await vscode.window.showInputBox({
+        prompt: "CDN domain",
+        value: profile.cdnDomain || "",
+        validateInput: (v) => {
+          if (!v) {
+            return "CDN domain is required";
+          }
+          if (!v.startsWith("http://") && !v.startsWith("https://")) {
+            return "CDN domain must start with http:// or https://";
+          }
+          return null;
+        },
+      });
+      if (!cdn) {
+        return;
+      }
+
+      const prefix = await vscode.window.showInputBox({
+        prompt: "Path prefix (optional)",
+        value: profile.pathPrefix || "",
+      });
+
+      await profileManager.updateProfile(profile.id, { cdnDomain: cdn, pathPrefix: prefix || "" });
+      vscode.window.showInformationMessage("CDN and path prefix updated");
+      return;
+    }
+
+    if (action.label === "Update credentials") {
+      const accessKey = await vscode.window.showInputBox({
+        prompt: "Enter access key ID",
+        password: true,
+        validateInput: (v) => (v ? null : "Access key required"),
+      });
+      if (!accessKey) {
+        return;
+      }
+
+      const secretKey = await vscode.window.showInputBox({
+        prompt: "Enter secret access key",
+        password: true,
+        validateInput: (v) => (v ? null : "Secret key required"),
+      });
+      if (!secretKey) {
+        return;
+      }
+
+      await profileManager.setCredentials(profile.id, { accessKey, secretKey });
+      vscode.window.showInformationMessage("Credentials updated and stored securely");
+      return;
+    }
+
+    if (action.label === "Set as Active Profile") {
+      await profileManager.setActiveProfile(profile.id, "global");
+      vscode.window.showInformationMessage(`Active profile set to ${profile.name}`);
+      return;
+    }
+  } catch (err) {
+    vscode.window.showErrorMessage(`Failed to update profile: ${err}`);
   }
 }
 

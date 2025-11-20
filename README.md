@@ -106,7 +106,7 @@ Or click the profile name in the status bar.
 
 #### Workspace-Specific Profiles
 Set a default profile for each workspace:
-```
+
 Ctrl+Shift+P → "Select Active Profile" → Check "Set as workspace default"
  Interactive wizard guides you through setup
  Credentials stored securely in VS Code keychain
@@ -534,6 +534,26 @@ The status bar shows your active profile:
 | Shortcut | Action |
 |----------|--------|
 | `Ctrl+Alt+P` / `Cmd+Alt+P` | Quick switch profile |
+
+### 💡 Pro Tip: Using Clipboard Managers for Credentials
+
+When creating or editing profiles, you need to input access keys and secret keys. Since VS Code's command palette closes when you switch windows (to copy credentials), we recommend using a **clipboard manager** to streamline this process:
+
+**Recommended workflow:**
+1. **Before** running `Mdimgup: Create Storage Profile` or `Mdimgup: Edit Storage Profile`:
+   - Copy your access key and secret key from your provider's dashboard
+   - Your clipboard manager (e.g., [Raycast](https://www.raycast.com/), [Alfred](https://www.alfredapp.com/), macOS native clipboard history) will store them
+   
+2. **During** profile creation:
+   - When prompted for credentials, use your clipboard manager shortcut (e.g., `Cmd+Shift+V` in Raycast)
+   - Paste the appropriate credential without losing the command palette focus
+   
+3. **Popular clipboard managers:**
+   - **macOS**: Raycast (free), Alfred, Paste, Maccy
+   - **Windows**: Ditto, ClipClip, Windows 11 clipboard history (`Win+V`)
+   - **Linux**: CopyQ, Clipman, Parcellite
+
+This approach prevents the command palette from closing mid-flow and provides a smoother credential input experience.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
