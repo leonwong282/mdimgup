@@ -35,8 +35,9 @@ Developer workflows (exact commands)
 - Test: `npm run test` (uses `vscode-test` harness; `pretest` compiles + lints first).
 
 Settings and safety
-- **New generic settings** (v0.1.0+): `storageProvider`, `endpoint`, `region`, `bucket`, `accessKey`, `secretKey`, `accountId`, `cdnDomain`, `pathPrefix`
-- **Legacy R2 settings** (deprecated but supported): `r2AccountId`, `r2Bucket`, `r2AccessKey`, `r2SecretKey`, `r2Domain`
+- **Generic settings** (v0.1.0+, still supported): `storageProvider`, `endpoint`, `region`, `bucket`, `accessKey`, `secretKey`, `accountId`, `cdnDomain`, `pathPrefix`
+- **Profile settings** (v0.2.0+, recommended): Managed via ProfileManager with secure credential storage
+- **Removed settings** (v0.0.1, no longer supported): `r2AccountId`, `r2Bucket`, `r2AccessKey`, `r2SecretKey`, `r2Domain`
 - Required settings vary by provider:
   - `cloudflare-r2`: accountId, bucket, accessKey, secretKey, cdnDomain
   - `aws-s3`: region, bucket, accessKey, secretKey, cdnDomain

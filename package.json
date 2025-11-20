@@ -2,7 +2,7 @@
   "name": "mdimgup",
   "displayName": "Markdown Image Upload",
   "description": "Upload images in Markdown files to S3-compatible cloud storage (Cloudflare R2, AWS S3, MinIO, DigitalOcean Spaces, etc.)",
-  "publisher": "YOUR-PUBLISHER-NAME",
+  "publisher": "leonwong282",
   "repository": {
     "type": "git",
     "url": "https://github.com/leonwong282/mdimgup"
@@ -50,39 +50,39 @@
       },
       {
         "command": "mdimgup.createProfile",
-        "title": "Create Storage Profile"
+        "title": "Mdimgup: Create Storage Profile"
       },
       {
         "command": "mdimgup.selectProfile",
-        "title": "Select Active Profile"
+        "title": "Mdimgup: Select Active Profile"
       },
       {
         "command": "mdimgup.quickSwitch",
-        "title": "Quick Switch Profile"
+        "title": "Mdimgup: Quick Switch Profile"
       },
       {
         "command": "mdimgup.editProfile",
-        "title": "Edit Storage Profile"
+        "title": "Mdimgup: Edit Storage Profile"
       },
       {
         "command": "mdimgup.deleteProfile",
-        "title": "Delete Storage Profile"
+        "title": "Mdimgup: Delete Storage Profile"
       },
       {
         "command": "mdimgup.duplicateProfile",
-        "title": "Duplicate Storage Profile"
+        "title": "Mdimgup: Duplicate Storage Profile"
       },
       {
         "command": "mdimgup.listProfiles",
-        "title": "List All Profiles"
+        "title": "Mdimgup: List All Profiles"
       },
       {
         "command": "mdimgup.importProfile",
-        "title": "Import Profile"
+        "title": "Mdimgup: Import Profile"
       },
       {
         "command": "mdimgup.exportProfile",
-        "title": "Export Profile"
+        "title": "Mdimgup: Export Profile"
       }
     ],
     "menus": {
@@ -170,36 +170,7 @@
           "default": "blog",
           "description": "Path prefix for uploaded images (e.g., 'blog', 'images', or empty for root)"
         },
-        "mdimgup.r2AccountId": {
-          "type": "string",
-          "default": "",
-          "markdownDeprecationMessage": "**Deprecated**: Use `mdimgup.accountId` and `mdimgup.storageProvider` instead.",
-          "deprecationMessage": "Deprecated: Use mdimgup.accountId and mdimgup.storageProvider instead."
-        },
-        "mdimgup.r2Bucket": {
-          "type": "string",
-          "default": "",
-          "markdownDeprecationMessage": "**Deprecated**: Use `mdimgup.bucket` instead.",
-          "deprecationMessage": "Deprecated: Use mdimgup.bucket instead."
-        },
-        "mdimgup.r2AccessKey": {
-          "type": "string",
-          "default": "",
-          "markdownDeprecationMessage": "**Deprecated**: Use `mdimgup.accessKey` instead.",
-          "deprecationMessage": "Deprecated: Use mdimgup.accessKey instead."
-        },
-        "mdimgup.r2SecretKey": {
-          "type": "string",
-          "default": "",
-          "markdownDeprecationMessage": "**Deprecated**: Use `mdimgup.secretKey` instead.",
-          "deprecationMessage": "Deprecated: Use mdimgup.secretKey instead."
-        },
-        "mdimgup.r2Domain": {
-          "type": "string",
-          "default": "",
-          "markdownDeprecationMessage": "**Deprecated**: Use `mdimgup.cdnDomain` instead.",
-          "deprecationMessage": "Deprecated: Use mdimgup.cdnDomain instead."
-        },
+
         "mdimgup.maxWidth": {
           "type": "number",
           "default": 1280

@@ -27,36 +27,8 @@ interface StorageConfig {
 }
 
 function resolveStorageConfig(cfg: vscode.WorkspaceConfiguration): StorageConfig | null {
-  // Check if legacy R2 settings exist
-  const hasLegacyR2 = !!(cfg.get<string>("r2AccountId") && cfg.get<string>("r2Bucket"));
-
-  // Check if new generic settings exist
+  // Use new generic settings
   const hasNewSettings = !!(cfg.get<string>("bucket") && cfg.get<string>("accessKey"));
-
-  if (!hasNewSettings && hasLegacyR2) {
-    // Use legacy R2 settings (backward compatibility)
-    const accountId = cfg.get<string>("r2AccountId")!;
-    const bucket = cfg.get<string>("r2Bucket")!;
-    const accessKey = cfg.get<string>("r2AccessKey")!;
-    const secretKey = cfg.get<string>("r2SecretKey")!;
-    const cdnDomain = cfg.get<string>("r2Domain")!;
-
-    if (!accountId || !bucket || !accessKey || !secretKey || !cdnDomain) {
-      return null;
-    }
-
-    return {
-      provider: "cloudflare-r2",
-      accountId,
-      bucket,
-      accessKey,
-      secretKey,
-      cdnDomain,
-      endpoint: null,
-      region: "auto",
-      pathPrefix: cfg.get<string>("pathPrefix") || "blog"
-    };
-  }
 
   if (hasNewSettings) {
     // Use new generic settings

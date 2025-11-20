@@ -170,7 +170,7 @@ interface StorageProfile {
 **FR-2.1: Create Profile**
 
 - Command: `mdimgup.createProfile`
-- Title: "Create New Storage Profile"
+- Title: "Mdimgup: Create New Storage Profile"
 - Input Flow:
   1. Profile name (required, unique)
   2. Description (optional)
@@ -185,15 +185,15 @@ interface StorageProfile {
 **FR-2.2: Edit Profile**
 
 - Command: `mdimgup.editProfile`
-- Title: "Edit Storage Profile"
+- Title: "Mdimgup: Edit Storage Profile"
 - Shows Quick Pick of existing profiles
 - Opens input flow similar to create (pre-filled)
 - Option to test connection before saving
 
 **FR-2.3: Delete Profile**
 
-- Command: `mdimgup.deleteProfile`
-- Title: "Delete Storage Profile"
+-- Command: `mdimgup.deleteProfile`
+-- Title: "Mdimgup: Delete Storage Profile"
 - Shows Quick Pick of existing profiles
 - Confirmation dialog with profile name
 - Cascade delete credentials from Secret Storage
@@ -201,8 +201,8 @@ interface StorageProfile {
 
 **FR-2.4: Duplicate Profile**
 
-- Command: `mdimgup.duplicateProfile`
-- Title: "Duplicate Storage Profile"
+-- Command: `mdimgup.duplicateProfile`
+-- Title: "Mdimgup: Duplicate Storage Profile"
 - Shows Quick Pick of existing profiles
 - Creates copy with "(Copy)" suffix
 - User enters new name
@@ -210,8 +210,8 @@ interface StorageProfile {
 
 **FR-2.5: List Profiles**
 
-- Command: `mdimgup.listProfiles`
-- Title: "List Storage Profiles"
+-- Command: `mdimgup.listProfiles`
+-- Title: "Mdimgup: List Storage Profiles"
 - Shows all profiles with:
   - Name
   - Provider icon
@@ -222,15 +222,17 @@ interface StorageProfile {
 **FR-2.6: Import/Export Profiles**
 
 **Export:**
-- Command: `mdimgup.exportProfile`
-- Exports profile(s) to JSON file
+-- Command: `mdimgup.exportProfile`
+-- Title: "Mdimgup: Export Profile"
+-- Exports profile(s) to JSON file
 - **Excludes credentials** (security)
 - Includes all other configuration
 - Use case: Share profile template with team
 
 **Import:**
-- Command: `mdimgup.importProfile`
-- Imports profile(s) from JSON file
+-- Command: `mdimgup.importProfile`
+-- Title: "Mdimgup: Import Profile"
+-- Imports profile(s) from JSON file
 - Validates schema
 - Prompts for credentials
 - Checks for name conflicts

@@ -53,7 +53,7 @@ export class ProfileManager {
     const config = vscode.workspace.getConfiguration("mdimgup");
     this.activeProfileId = config.get<string>("activeProfile") || null;
 
-    // Check if migration is needed
+    // Check if migration is needed (v0.1.0 generic settings only)
     if (this.profiles.size === 0) {
       await this.migrateLegacyConfig();
     }
@@ -191,7 +191,7 @@ export class ProfileManager {
       }
     }
 
-    // 3. Fallback to legacy config
+    // 3. Fallback to legacy config (v0.1.0 generic settings only)
     return await this.resolveLegacyConfig();
   }
 
@@ -317,58 +317,36 @@ export class ProfileManager {
     return { valid: errors.length === 0, errors };
   }
 
-  // Migration from Legacy Config
+  // Migration from Legacy Config (v0.1.0 generic settings only, no r2*)
 
   async migrateLegacyConfig(): Promise<StorageProfile | null> {
     const cfg = vscode.workspace.getConfiguration("mdimgup");
 
-    const hasLegacyR2 = !!(cfg.get<string>("r2AccountId") && cfg.get<string>("r2Bucket"));
     const hasNewSettings = !!(cfg.get<string>("bucket") && cfg.get<string>("accessKey"));
 
-    if (!hasLegacyR2 && !hasNewSettings) {
+    if (!hasNewSettings) {
       return null;
     }
 
-    let profile: StorageProfile;
+    // Migrate v0.1.0 generic settings
+    const provider = (cfg.get<string>("storageProvider") || "s3-compatible") as StorageProvider;
 
-    if (hasLegacyR2) {
-      // Migrate legacy R2 settings
-      profile = await this.createProfile({
-        name: "Default (Legacy)",
-        description: "Migrated from legacy R2 configuration",
-        provider: "cloudflare-r2",
-        accountId: cfg.get<string>("r2AccountId")!,
-        bucket: cfg.get<string>("r2Bucket")!,
-        region: "auto",
-        cdnDomain: cfg.get<string>("r2Domain")!,
-        pathPrefix: cfg.get<string>("pathPrefix") || "blog",
-      });
+    const profile = await this.createProfile({
+      name: "Default (Migrated)",
+      description: "Migrated from v0.1.0 configuration",
+      provider,
+      accountId: cfg.get<string>("accountId") || undefined,
+      bucket: cfg.get<string>("bucket")!,
+      region: cfg.get<string>("region") || "auto",
+      endpoint: cfg.get<string>("endpoint") || undefined,
+      cdnDomain: cfg.get<string>("cdnDomain")!,
+      pathPrefix: cfg.get<string>("pathPrefix") || "blog",
+    });
 
-      await this.setCredentials(profile.id, {
-        accessKey: cfg.get<string>("r2AccessKey")!,
-        secretKey: cfg.get<string>("r2SecretKey")!,
-      });
-    } else {
-      // Migrate new generic settings
-      const provider = (cfg.get<string>("storageProvider") || "s3-compatible") as StorageProvider;
-
-      profile = await this.createProfile({
-        name: "Default (Legacy)",
-        description: "Migrated from legacy configuration",
-        provider,
-        accountId: cfg.get<string>("accountId") || undefined,
-        bucket: cfg.get<string>("bucket")!,
-        region: cfg.get<string>("region") || "auto",
-        endpoint: cfg.get<string>("endpoint") || undefined,
-        cdnDomain: cfg.get<string>("cdnDomain")!,
-        pathPrefix: cfg.get<string>("pathPrefix") || "blog",
-      });
-
-      await this.setCredentials(profile.id, {
-        accessKey: cfg.get<string>("accessKey")!,
-        secretKey: cfg.get<string>("secretKey")!,
-      });
-    }
+    await this.setCredentials(profile.id, {
+      accessKey: cfg.get<string>("accessKey")!,
+      secretKey: cfg.get<string>("secretKey")!,
+    });
 
     // Set as active profile
     await this.setActiveProfile(profile.id, "global");
@@ -379,26 +357,10 @@ export class ProfileManager {
   async resolveLegacyConfig(): Promise<StorageProfile | null> {
     const cfg = vscode.workspace.getConfiguration("mdimgup");
 
-    const hasLegacyR2 = !!(cfg.get<string>("r2AccountId") && cfg.get<string>("r2Bucket"));
     const hasNewSettings = !!(cfg.get<string>("bucket") && cfg.get<string>("accessKey"));
 
-    if (!hasLegacyR2 && !hasNewSettings) {
+    if (!hasNewSettings) {
       return null;
-    }
-
-    if (hasLegacyR2) {
-      return {
-        id: "legacy-r2",
-        name: "Legacy R2 Configuration",
-        provider: "cloudflare-r2",
-        accountId: cfg.get<string>("r2AccountId")!,
-        bucket: cfg.get<string>("r2Bucket")!,
-        region: "auto",
-        cdnDomain: cfg.get<string>("r2Domain")!,
-        pathPrefix: cfg.get<string>("pathPrefix") || "blog",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
     }
 
     const provider = (cfg.get<string>("storageProvider") || "s3-compatible") as StorageProvider;
@@ -424,21 +386,13 @@ export class ProfileManager {
     }
 
     // For legacy profiles, get credentials from settings
-    if (profileId.startsWith("legacy-")) {
+    if (profileId === "legacy-generic") {
       const cfg = vscode.workspace.getConfiguration("mdimgup");
-      if (profileId === "legacy-r2") {
-        return {
-          ...profile,
-          accessKey: cfg.get<string>("r2AccessKey")!,
-          secretKey: cfg.get<string>("r2SecretKey")!,
-        };
-      } else {
-        return {
-          ...profile,
-          accessKey: cfg.get<string>("accessKey")!,
-          secretKey: cfg.get<string>("secretKey")!,
-        };
-      }
+      return {
+        ...profile,
+        accessKey: cfg.get<string>("accessKey")!,
+        secretKey: cfg.get<string>("secretKey")!,
+      };
     }
 
     const credentials = await this.getCredentials(profileId);
