@@ -9,6 +9,8 @@ import CryptoJS from "crypto-js";
 import { ProfileManager, StorageProfile } from "./profile-manager";
 import { registerProfileCommands } from "./profile-ui";
 import { ProfileStatusBar } from "./status-bar";
+import { UploadHistoryManager, NamingPatternRenderer } from "./upload-history";
+import { registerHistoryCommands } from "./history-ui";
 
 const cache = new Map<string, string>();
 
@@ -117,8 +119,18 @@ export async function activate(context: vscode.ExtensionContext) {
   const profileManager = new ProfileManager(context);
   await profileManager.initialize();
 
+  // Initialize UploadHistoryManager
+  const uploadHistory = new UploadHistoryManager(context);
+  await uploadHistory.initialize();
+
+  // Initialize NamingPatternRenderer
+  const namingRenderer = new NamingPatternRenderer();
+
   // Register profile commands
   registerProfileCommands(context, profileManager);
+
+  // Register history commands
+  registerHistoryCommands(context, uploadHistory, profileManager);
 
   // Create status bar
   const statusBar = new ProfileStatusBar(profileManager);
@@ -230,8 +242,17 @@ export async function activate(context: vscode.ExtensionContext) {
         uploadBuffer = Buffer.from(await img.toBuffer());
       }
 
+      // Generate filename using naming pattern
+      const namingPattern = profile.namingPattern || "{timestamp}-{filename}{ext}";
+      const renderedName = namingRenderer.render(namingPattern, {
+        originalPath: fullPath,
+        hash,
+        profileName: profile.name,
+      });
+
       const pathPrefix = storageConfig.pathPrefix;
-      const key = `${pathPrefix}${pathPrefix ? '/' : ''}${Date.now()}-${path.basename(fullPath)}`;
+      const key = `${pathPrefix}${pathPrefix ? '/' : ''}${renderedName}`;
+
       await s3.send(new PutObjectCommand({
         Bucket: storageConfig.bucket,
         Key: key,
@@ -242,6 +263,18 @@ export async function activate(context: vscode.ExtensionContext) {
       const url = `${storageConfig.cdnDomain}${storageConfig.cdnDomain.endsWith('/') ? '' : '/'}${key}`;
       cache.set(hash, url);
       content = content.replace(imgPath, url);
+
+      // Save to upload history
+      await uploadHistory.addRecord({
+        profileId: profile.id,
+        profileName: profile.name,
+        documentUri: editor.document.uri.toString(),
+        originalPath: imgPath,
+        uploadedUrl: url,
+        uploadKey: key,
+        fileSize: uploadBuffer.length,
+        fileHash: hash,
+      });
     }));
 
     await vscode.window.withProgress({

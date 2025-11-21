@@ -167,6 +167,30 @@ async function createProfileWizard(profileManager: ProfileManager): Promise<Stor
     value: "blog",
   });
 
+  // Step 8: Naming Pattern (optional)
+  const useCustomPattern = await vscode.window.showQuickPick(
+    [
+      { label: "Use default pattern", value: "default" },
+      { label: "Customize filename pattern", value: "custom" },
+    ],
+    { placeHolder: "Filename pattern (advanced)" }
+  );
+
+  let namingPattern: string | undefined;
+  if (useCustomPattern?.value === "custom") {
+    namingPattern = await vscode.window.showInputBox({
+      prompt: "Enter naming pattern (e.g., {date}/{filename}-{hash:8}{ext})",
+      placeHolder: "{timestamp}-{filename}{ext}",
+      value: "{timestamp}-{filename}{ext}",
+      validateInput: (value) => {
+        const { NamingPatternRenderer } = require("./upload-history");
+        const renderer = new NamingPatternRenderer();
+        const validation = renderer.validate(value);
+        return validation.valid ? null : validation.error;
+      },
+    });
+  }
+
   // Create profile
   try {
     const profile = await profileManager.createProfile({
@@ -176,6 +200,7 @@ async function createProfileWizard(profileManager: ProfileManager): Promise<Stor
       ...config,
       cdnDomain,
       pathPrefix: pathPrefix || "",
+      namingPattern,
     });
 
     // Store credentials
@@ -389,6 +414,7 @@ async function editProfileCommand(profileManager: ProfileManager): Promise<void>
     { label: "Edit description" },
     { label: "Edit provider settings" },
     { label: "Edit CDN & Path Prefix" },
+    { label: "Edit naming pattern" },
     { label: "Update credentials" },
     { label: "Set as Active Profile" },
     { label: "Cancel" },
@@ -540,6 +566,62 @@ async function editProfileCommand(profileManager: ProfileManager): Promise<void>
 
       await profileManager.updateProfile(profile.id, { cdnDomain: cdn, pathPrefix: prefix || "" });
       vscode.window.showInformationMessage("CDN and path prefix updated");
+      return;
+    }
+
+    if (action.label === "Edit naming pattern") {
+      const { NamingPatternRenderer, NAMING_PATTERN_TEMPLATES } = require("./upload-history");
+      const renderer = new NamingPatternRenderer();
+
+      interface TemplateItem {
+        label: string;
+        description: string;
+      }
+
+      // Show template choices
+      const templateItems: TemplateItem[] = NAMING_PATTERN_TEMPLATES.map((t: any) => ({
+        label: t.pattern,
+        description: t.description,
+      }));
+      templateItems.push({ label: "$(edit) Custom pattern", description: "Enter your own pattern" });
+
+      const choice = await vscode.window.showQuickPick(templateItems, {
+        placeHolder: `Current: ${profile.namingPattern || "{timestamp}-{filename}{ext}"}`,
+      });
+
+      if (!choice) {
+        return;
+      }
+
+      let pattern: string;
+      if (choice.label === "$(edit) Custom pattern") {
+        const custom = await vscode.window.showInputBox({
+          prompt: "Enter naming pattern",
+          value: profile.namingPattern || "{timestamp}-{filename}{ext}",
+          validateInput: (value) => {
+            const validation = renderer.validate(value);
+            return validation.valid ? null : validation.error;
+          },
+        });
+        if (!custom) {
+          return;
+        }
+        pattern = custom;
+      } else {
+        pattern = choice.label;
+      }
+
+      const example = renderer.getExample(pattern);
+      const confirm = await vscode.window.showInformationMessage(
+        `Example: ${example}\n\nUse this pattern?`,
+        "Yes",
+        "No"
+      );
+
+      if (confirm === "Yes") {
+        await profileManager.updateProfile(profile.id, { namingPattern: pattern });
+        vscode.window.showInformationMessage("Naming pattern updated");
+      }
       return;
     }
 

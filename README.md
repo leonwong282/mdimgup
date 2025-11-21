@@ -6,7 +6,7 @@
 
 > Markdown Image Upload for VS Code - Upload to Any S3-Compatible Cloud Storage
 
-![Version](https://img.shields.io/badge/Version-0.2.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-0.2.1-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 ![VS Code](https://img.shields.io/badge/VS%20Code-1.105.0+-purple?style=for-the-badge)
 
@@ -20,12 +20,14 @@
 
 `mdimgup` is a powerful VS Code extension that automatically uploads local images referenced in your Markdown files to S3-compatible cloud storage (Cloudflare R2, AWS S3, MinIO, DigitalOcean Spaces, Backblaze B2, etc.), then updates the image links in-place.
 
-**✨ NEW in v0.2.0:** Multi-profile support! Manage multiple storage configurations and quickly switch between them.
+**✨ NEW in v0.2.1:** Multi-profile support, custom naming patterns, and upload history with undo! Manage multiple storage configurations, control filename formats, and revert uploads with one click.
 
 ## ✨ Features
 
 - 🎯 **Multi-Profile Management**: Save and switch between multiple storage configurations
 - ☁️ **Universal S3 Support**: Works with Cloudflare R2, AWS S3, MinIO, DigitalOcean Spaces, Backblaze B2, and any S3-compatible service
+- 🎨 **Custom Naming Patterns**: User-defined filename templates with variables (timestamp, date, hash, profile, counter, etc.)
+- 📜 **Upload History & Undo**: Track uploaded images and revert with one command (optionally delete from S3)
 - 🖼️ **Smart Image Processing**: Automatic resizing (except GIFs) before upload
 - ⚡ **Fast Parallel Uploads**: Configurable concurrency for quick batch uploads
 - 🔐 **Secure Credentials**: Stored in VS Code's secure keychain (Secret Storage)
@@ -359,13 +361,13 @@ For backward compatibility, you can still use global settings:
 
 **Good news!** Your existing configuration continues to work. No immediate action required.
 
-#### Migration from v0.1.0 to v0.2.0
+#### Migration from v0.1.0 to v0.2.1
 
 **Good news!** Your v0.1.0 configuration continues to work. No immediate action required.
 
 **Automatic Migration**
 
-On first use of v0.2.0, the extension will:
+On first use of v0.2.1, the extension will:
 1. Detect your existing v0.1.0 configuration (generic settings)
 2. Offer to convert it to a named profile
 3. Keep your legacy settings as fallback (for safety)
@@ -407,7 +409,7 @@ After confirming profiles work:
 If you're still using the **original v0.0.1 R2-only settings**, these are **no longer supported**:
 
 ```json
-// ❌ REMOVED in v0.2.0 (v0.0.1 settings)
+// ❌ REMOVED in v0.2.1 (v0.0.1 settings)
 {
   "mdimgup.r2AccountId": "...",
   "mdimgup.r2Bucket": "...",
@@ -691,17 +693,257 @@ If you're stuck:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## 🎯 Custom Naming Patterns
+
+**NEW in v0.2.0!** Control uploaded filename formats with custom naming patterns.
+
+### Why Naming Patterns?
+
+- 📁 **Organize files**: Date-based folders, structured naming
+- 🔍 **SEO-friendly URLs**: Use original filenames instead of timestamps
+- 🎨 **Consistency**: Standardize naming across projects
+- 🏷️ **Context**: Include profile names, dates, or custom identifiers
+
+### Pattern Variables
+
+Use these variables in your naming pattern:
+
+| Variable | Description | Example Output |
+|----------|-------------|----------------|
+| `{timestamp}` | Unix timestamp (milliseconds) | `1700000000000` |
+| `{date}` | Date (YYYY-MM-DD) | `2024-03-15` |
+| `{time}` | Time (HH-mm-ss) | `14-30-45` |
+| `{datetime}` | Date and time | `2024-03-15_14-30-45` |
+| `{filename}` | Original filename (without extension) | `screenshot` |
+| `{ext}` | File extension (with dot) | `.png` |
+| `{hash:N}` | First N characters of file hash | `{hash:8}` → `a1b2c3d4` |
+| `{profile}` | Active profile name (lowercase, spaces→dashes) | `production-blog` |
+| `{counter}` | Auto-incrementing counter (resets per session) | `001`, `002`, `003` |
+| `{random:N}` | N random alphanumeric characters | `{random:6}` → `x7k9m2` |
+
+### Pattern Examples
+
+**Predefined templates** (available during profile creation/editing):
+
+```
+1. {timestamp}-{filename}{ext}
+   → 1700000000000-screenshot.png
+   Default pattern, ensures uniqueness
+
+2. {date}/{filename}{ext}  
+   → 2024-03-15/screenshot.png
+   Date-organized folders
+
+3. {profile}/{datetime}-{filename}{ext}
+   → my-blog/2024-03-15_14-30-45-screenshot.png
+   Profile-specific with timestamp
+
+4. {date}/{hash:8}-{filename}{ext}
+   → 2024-03-15/a1b2c3d4-screenshot.png
+   Date + content hash
+
+5. {filename}-{random:6}{ext}
+   → screenshot-x7k9m2.png
+   Keep original name with random suffix
+
+6. images/{counter:03d}-{filename}{ext}
+   → images/001-screenshot.png
+   Sequential numbering
+```
+
+### Setting Naming Patterns
+
+**During Profile Creation:**
+1. Command Palette → `Mdimgup: Create Storage Profile`
+2. Follow wizard steps
+3. At "Naming Pattern" step, choose a template or enter custom pattern
+4. Preview shows example output
+
+**Editing Existing Profile:**
+1. Command Palette → `Mdimgup: Edit Storage Profile`
+2. Select "Edit naming pattern"
+3. Choose template or enter custom pattern
+4. Preview and confirm
+
+**Pattern Validation:**
+The extension validates patterns and shows examples before saving:
+- ✅ Valid variables are recognized
+- ⚠️ Unknown variables trigger warnings
+- 📝 Preview shows actual output format
+
+### Custom Pattern Examples
+
+```
+SEO-friendly with dates:
+{date}/{filename}{ext}
+→ 2024-03-15/my-blog-post-hero-image.png
+
+Content-addressed storage:
+{hash:16}{ext}
+→ a1b2c3d4e5f6g7h8.png
+
+Project-based organization:
+{profile}/{date}/{filename}{ext}
+→ client-a/2024-03-15/invoice.pdf
+
+Sequential with timestamp:
+{date}/{counter:04d}-{timestamp}{ext}
+→ 2024-03-15/0001-1700000000000.png
+```
+
+**Pro Tips:**
+- Use `{hash:8}` for content deduplication
+- Use `{date}/` for time-based organization
+- Use `{profile}` for multi-project workflows
+- Use `{counter}` for ordered uploads within a session
+- Keep `{ext}` at the end to preserve file type
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## 📜 Upload History & Undo
+
+**NEW in v0.2.0!** Track all uploaded images and undo mistakes with one command.
+
+### Why Upload History?
+
+- ⏪ **Undo uploads**: Accidentally uploaded wrong image? Revert with one click
+- 🗑️ **Clean up storage**: Delete uploaded files from S3 during undo
+- 📊 **Track usage**: See all uploaded images, when, and to which profile
+- 🔍 **Find images**: Browse upload history by document, profile, or date
+
+### Commands
+
+| Command | Shortcut | Description |
+|---------|----------|-------------|
+| **View Upload History** | - | Browse recent uploads with actions |
+| **Undo Last Upload** | - | Revert last upload in current document |
+| **Clear Upload History** | - | Delete history records (keeps S3 files) |
+
+### View Upload History
+
+**Access:** Command Palette → `Mdimgup: View Upload History`
+
+**Features:**
+- 📋 Shows last 100 uploads
+- 🔎 Filter by current document
+- ⚡ Quick actions: Undo, Open, Copy URL, Delete, Details
+
+**Display format:**
+```
+🖼️ screenshot.png → https://cdn.example.com/blog/1700000000000-screenshot.png
+   Profile: Production Blog | Size: 245 KB | 2 hours ago
+```
+
+**Actions per record:**
+- **Undo Upload**: Revert link in document + optionally delete from S3
+- **Open Document**: Jump to the document containing the image
+- **Copy URL**: Copy CDN URL to clipboard
+- **Delete Record**: Remove from history (keeps S3 file)
+- **Show Details**: View full upload metadata
+
+### Undo Last Upload
+
+**Access:** Command Palette → `Mdimgup: Undo Last Upload`
+
+**What it does:**
+1. Finds the most recent upload in the current document
+2. Reverts the CDN link back to the original local path
+3. Optionally deletes the file from S3 storage
+
+**Example:**
+```markdown
+Before undo:
+![Screenshot](https://cdn.example.com/blog/1700000000000-screenshot.png)
+
+After undo:
+![Screenshot](./images/screenshot.png)
+```
+
+**Options:**
+- **Revert link only**: Keeps file in S3, just reverts Markdown link
+- **Revert + delete from S3**: Removes file from storage (cannot be undone)
+
+**Safety checks:**
+- ✅ Only reverts if original local file still exists
+- ✅ Warns before deleting from S3
+- ✅ Shows file details before confirmation
+
+### Clear Upload History
+
+**Access:** Command Palette → `Mdimgup: Clear Upload History`
+
+**Options:**
+- **All history**: Clear all records
+- **Older than 30 days**: Keep recent uploads
+- **Older than 90 days**: Archive old history
+
+**Note:** This only clears history records from VS Code. Files remain in S3 storage.
+
+### History Storage
+
+**Automatic management:**
+- 🗄️ Stores up to 1,000 upload records
+- 🔄 Oldest records auto-deleted when limit reached
+- 💾 Persists across VS Code sessions
+- 🔒 Stored locally in VS Code's global state
+
+**Record metadata:**
+- Original file path
+- Uploaded CDN URL
+- Upload key (S3 object key)
+- Profile used
+- Document URI
+- Timestamp
+- File size and hash
+
+### Use Cases
+
+**Scenario 1: Wrong Image Uploaded**
+```
+1. Upload images to blog post
+2. Notice wrong screenshot included
+3. Command Palette → "Undo Last Upload"
+4. Choose "Revert link + delete from S3"
+5. Upload correct image
+```
+
+**Scenario 2: Cleaning Up Test Uploads**
+```
+1. Command Palette → "View Upload History"
+2. Filter by current document
+3. Select test uploads → "Undo Upload"
+4. Choose "Revert + delete from S3"
+5. Clean workspace and storage
+```
+
+**Scenario 3: Finding Old Images**
+```
+1. Command Palette → "View Upload History"
+2. Browse recent uploads
+3. Select image → "Open Document"
+4. Jump to document containing the image
+5. Or "Copy URL" to reuse elsewhere
+```
+
+**Pro Tips:**
+- Use "Revert link only" if you want to keep the CDN URL for future use
+- Use "Revert + delete from S3" to completely remove mistakes
+- Regularly clear old history to keep records relevant
+- History survives VS Code restarts and updates
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## 🔮 Roadmap
 
 - [x] **Multi-provider support** - Cloudflare R2, AWS S3, MinIO, and more
 - [x] **Multi-profile management** - Save and switch between configurations
 - [x] **Secure credential storage** - VS Code keychain integration
 - [x] **Workspace-aware profiles** - Auto-select based on workspace
+- [x] **Custom naming patterns** - User-defined filename templates
+- [x] **Upload history** - Track uploaded images with undo capability
 - [ ] **Profile templates** - Pre-configured profiles for popular providers
 - [ ] **Batch operations** - Upload multiple Markdown files at once
 - [ ] **Image optimization** - WebP conversion, compression options
-- [ ] **Custom naming patterns** - User-defined filename templates
-- [ ] **Upload history** - Track uploaded images with undo capability
 - [ ] **Azure Blob Storage** - Native support (non-S3)
 - [ ] **Google Cloud Storage** - Native support (non-S3)
 
@@ -711,10 +953,12 @@ See the [open issues](https://github.com/leonwong282/mdimgup/issues) for feature
 
 ## 📜 Release Notes
 
-### 0.2.0 (Latest) - Multi-Profile Support
+### 0.2.1 (Latest) - Multi-Profile Support + Naming Patterns + Upload History
 
 **Major Features:**
 - 🎉 **Multi-Profile System**: Save and manage unlimited storage configurations
+- 🎨 **Custom Naming Patterns**: Control uploaded filenames with variables ({timestamp}, {date}, {filename}, {hash}, {profile}, {counter}, {random})
+- 📜 **Upload History & Undo**: Track uploads, revert links, and optionally delete from S3
 - 🔐 **Secure Credentials**: Stored in VS Code's secure keychain (Secret Storage API)
 - 📊 **Status Bar Integration**: Always see your active profile
 - ⌨️ **Quick Switch**: Change profiles with `Ctrl+Alt+P` / `Cmd+Alt+P`
@@ -723,26 +967,12 @@ See the [open issues](https://github.com/leonwong282/mdimgup/issues) for feature
 - 🔄 **Automatic Migration**: Seamlessly upgrade from legacy single-config
 
 **New Commands:**
-- Create, Edit, Delete, Duplicate Profile
-- Select Active Profile, Quick Switch
-- List All Profiles
-- Import/Export Profile
-- Upload with Profile Selection
+- **Profiles**: Create, Edit, Delete, Duplicate, Select Active, Quick Switch, List All, Import/Export
+- **Upload**: Upload with Profile Selection
+- **History**: View Upload History, Undo Last Upload, Clear Upload History
 
 See [CHANGELOG.md](CHANGELOG.md) for full details.
 
-### 0.1.0 - Multi-Provider Support
-
-- Multi-provider support (AWS S3, MinIO, DigitalOcean Spaces, Backblaze B2)
-- Generic configuration settings
-- Customizable path prefix
-- 100% backward compatible
-
-### 0.0.1 - Initial Release
-
-- Cloudflare R2 support
-- Image resizing and upload
-- MD5-based caching
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

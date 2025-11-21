@@ -24,6 +24,7 @@ export interface StorageProfile {
   maxWidth?: number;
   parallelUploads?: number;
   useCache?: boolean;
+  namingPattern?: string; // Custom filename pattern (default: "{timestamp}-{filename}{ext}")
 
   // Metadata
   createdAt: string;

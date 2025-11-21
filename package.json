@@ -32,7 +32,7 @@
     "url": "https://github.com/leonwong282/mdimgup/issues"
   },
   "homepage": "https://github.com/leonwong282/mdimgup#readme",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "engines": {
     "vscode": "^1.105.0"
   },
@@ -83,6 +83,18 @@
       {
         "command": "mdimgup.exportProfile",
         "title": "Mdimgup: Export Profile"
+      },
+      {
+        "command": "mdimgup.viewHistory",
+        "title": "Mdimgup: View Upload History"
+      },
+      {
+        "command": "mdimgup.undoUpload",
+        "title": "Mdimgup: Undo Last Upload"
+      },
+      {
+        "command": "mdimgup.clearHistory",
+        "title": "Mdimgup: Clear Upload History"
       }
     ],
     "menus": {
