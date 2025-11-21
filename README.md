@@ -2,6 +2,10 @@
 
 <div align="center">
 
+<a href="https://github.com/leonwong282/awesome-project-template">
+  <img src="images/logo.png" alt="Logo" width="80" height="80">
+</a>
+
 # 📦 mdimgup
 
 > Markdown Image Upload for VS Code - Upload to Any S3-Compatible Cloud Storage

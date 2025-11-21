@@ -33,6 +33,7 @@
   },
   "homepage": "https://github.com/leonwong282/mdimgup#readme",
   "version": "0.2.1",
+  "icon": "images/logo.png",
   "engines": {
     "vscode": "^1.105.0"
   },
