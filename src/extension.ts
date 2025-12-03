@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import path from "path";
 import fs from "fs";
-import sharp from "sharp";
+import { Jimp } from "jimp";
 import mime from "mime-types";
 import pLimit from "p-limit";
 import CryptoJS from "crypto-js";
@@ -13,6 +13,23 @@ import { UploadHistoryManager, NamingPatternRenderer } from "./upload-history";
 import { registerHistoryCommands } from "./history-ui";
 
 const cache = new Map<string, string>();
+
+/**
+ * Get jimp-compatible mime type from file extension.
+ * Jimp supports: image/jpeg, image/png, image/bmp, image/tiff, image/gif
+ */
+function getJimpMimeType(ext: string): "image/jpeg" | "image/png" | "image/bmp" | "image/tiff" | "image/gif" {
+  const mimeMap: Record<string, "image/jpeg" | "image/png" | "image/bmp" | "image/tiff" | "image/gif"> = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".bmp": "image/bmp",
+    ".tiff": "image/tiff",
+    ".tif": "image/tiff",
+    ".gif": "image/gif",
+  };
+  return mimeMap[ext] || "image/png";
+}
 
 type StorageProvider = "cloudflare-r2" | "aws-s3" | "s3-compatible";
 
@@ -263,11 +280,22 @@ export async function activate(context: vscode.ExtensionContext) {
 
       let uploadBuffer = buffer;
       const ext = path.extname(fullPath).toLowerCase();
-      if (ext !== ".gif") {
-        const img = sharp(buffer);
-        const meta = await img.metadata();
-        await img.resize({ width: meta.width && meta.width > MAX_WIDTH ? MAX_WIDTH : meta.width });
-        uploadBuffer = Buffer.from(await img.toBuffer());
+      // Skip resize for GIF and WebP (jimp has limited support for these)
+      if (ext !== ".gif" && ext !== ".webp") {
+        try {
+          const image = await Jimp.fromBuffer(buffer);
+          if (image.width > MAX_WIDTH) {
+            image.resize({ w: MAX_WIDTH });
+          }
+          // Determine output mime type based on extension
+          const jimpMime = getJimpMimeType(ext);
+          // Jimp may return a Buffer with a generic ArrayBufferLike type; normalize to a Node Buffer
+          const jimpBuf = await image.getBuffer(jimpMime);
+          uploadBuffer = Buffer.from(jimpBuf as any);
+        } catch (e) {
+          // If jimp fails to process, use original buffer
+          console.warn(`Jimp failed to process ${fullPath}, using original:`, e);
+        }
       }
 
       // Generate filename using naming pattern
