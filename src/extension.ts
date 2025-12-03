@@ -216,11 +216,38 @@ export async function activate(context: vscode.ExtensionContext) {
     const limit = pLimit(PARALLEL);
 
     const tasks = matches.map(m => limit(async () => {
-      let imgPath = decodeURIComponent(m[1]);
-      if (imgPath.startsWith("http")) {
+      // m[1] contains the raw content inside the parentheses. It may include
+      // angle brackets, percent-encoding, or an optional title after the URL.
+      const rawInside = (m[1] || "").trim();
+
+      // Extract the URL part (strip angle brackets and any title)
+      let urlPart = rawInside;
+      if (urlPart.startsWith("<") && urlPart.endsWith(">")) {
+        urlPart = urlPart.slice(1, -1).trim();
+      }
+      // If there's a title after the URL (e.g. url "title"), remove it.
+      const titleMatch = urlPart.match(/\s+["'][\s\S]*["']\s*$/);
+      if (titleMatch) {
+        urlPart = urlPart.slice(0, titleMatch.index).trim();
+      }
+
+      // Keep the original/raw markdown text for replacement later
+      const originalMarkdownUrl = rawInside;
+
+      // Decode for filesystem operations only. Keep original for text replacement
+      let decodedPath: string;
+      try {
+        decodedPath = decodeURIComponent(urlPart);
+      } catch (e) {
+        // If decoding fails, fall back to raw url part
+        decodedPath = urlPart;
+      }
+
+      if (decodedPath.startsWith("http")) {
         return;
       }
-      const fullPath = path.isAbsolute(imgPath) ? imgPath : path.join(mdDir, imgPath);
+
+      const fullPath = path.isAbsolute(decodedPath) ? decodedPath : path.join(mdDir, decodedPath);
       if (!fs.existsSync(fullPath)) {
         return;
       }
@@ -229,7 +256,8 @@ export async function activate(context: vscode.ExtensionContext) {
       const hash = CryptoJS.MD5(buffer.toString("base64")).toString();
 
       if (USE_CACHE && cache.has(hash)) {
-        content = content.replace(imgPath, cache.get(hash)!);
+        // Replace the original markdown URL (not the decoded path)
+        content = content.split(originalMarkdownUrl).join(cache.get(hash)!);
         return;
       }
 
@@ -262,14 +290,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
       const url = `${storageConfig.cdnDomain}${storageConfig.cdnDomain.endsWith('/') ? '' : '/'}${key}`;
       cache.set(hash, url);
-      content = content.replace(imgPath, url);
+      // Replace the original markdown URL occurrence(s) to preserve encoding/title
+      content = content.split(originalMarkdownUrl).join(url);
 
       // Save to upload history
       await uploadHistory.addRecord({
         profileId: profile.id,
         profileName: profile.name,
         documentUri: editor.document.uri.toString(),
-        originalPath: imgPath,
+        originalPath: originalMarkdownUrl,
         uploadedUrl: url,
         uploadKey: key,
         fileSize: uploadBuffer.length,
